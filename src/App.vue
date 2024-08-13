@@ -1,6 +1,50 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { pids } from './pids';
 import Notice from './components/Notice/index.vue'
+
+function connectionFactory() {
+  var options = {
+    protocols_whitelist: ['websocket', 'xdr-streaming', 'xhr-streaming', 'iframe-eventsource', 'xdr-polling', 'xhr-polling'],
+    debug: true,
+    jsessionid: false,
+    server_heartbeat_interval: 4000,
+    heartbeatTimeout: 2000
+  };
+
+  const stream = 'https://streaming.forexpros.com'
+  const sock = new SockJS(stream + '/echo', null, options);
+
+  sock.onopen = () => {
+    var TimeZoneID = 12;
+
+    for (const pid of pids) {
+      sock.send(JSON.stringify({
+        _event: "subscribe",
+        tzID: TimeZoneID,
+        message: pid
+      }));
+    }
+  };
+
+  sock.onmessage = function (event) {
+    try {
+      const content = JSON.parse(event.data);
+      const serializedMsg = content.message.split('::');
+      const serializedObj = JSON.parse(serializedMsg[1]);
+      console.log({ serializedObj });
+    }
+
+    catch (err) {
+      console.error('Houve um problema ao serializar a mensagem: ' + err.message + event.data);
+      sock.close();
+    }
+  };
+
+  sock.onclose = function () {
+    console.log('Closing websocket...');
+  }
+}
 
 const news = ref([
   {
@@ -52,6 +96,10 @@ const news = ref([
     score: 1
   },
 ]);
+
+onMounted(() => {
+  connectionFactory();
+})
 
 </script>
 
