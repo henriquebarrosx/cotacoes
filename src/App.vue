@@ -7,10 +7,11 @@ import { Observable } from './entities/observable';
 import Notice from './components/Notice/index.vue';
 import { wssForexProsService } from './service/forex-pros-service';
 import { ForexProsConnectionState } from './service/forex-pros-service/types';
+import { httpNoticiasService } from './service/noticias-service';
 
 const news = ref<Noticia[]>([]);
 
-onMounted(() => {
+onMounted(async () => {
   wssForexProsService.register(
     new Observable(ForexProsConnectionState.ESTABLISHED, () => {
       pids.forEach((pid) => {
@@ -20,6 +21,8 @@ onMounted(() => {
       })
     })
   );
+
+  news.value = await httpNoticiasService.buscarTodas();
 });
 
 </script>

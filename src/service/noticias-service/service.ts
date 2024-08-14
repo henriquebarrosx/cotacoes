@@ -4,7 +4,7 @@ import { HttpNoticiasServiceGateway } from "./gateway";
 export class HttpNoticiasService
   implements HttpNoticiasServiceGateway {
 
-  buscarTodas(): Noticia[] {
+  async buscarTodas(): Promise<Noticia[]> {
     return [
       new Noticia(
         'Lorem Ipsum',
