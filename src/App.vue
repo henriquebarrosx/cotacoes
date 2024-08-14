@@ -1,105 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from 'vue';
+
 import { pids } from './pids';
-import Notice from './components/Notice/index.vue'
+import { Noticia } from './entities/noticia';
+import { Observable } from './entities/observable';
+import Notice from './components/Notice/index.vue';
+import { wssForexProsService } from './service/forex-pros-service';
+import { ForexProsConnectionState } from './service/forex-pros-service/types';
 
-function connectionFactory() {
-  var options = {
-    protocols_whitelist: ['websocket', 'xdr-streaming', 'xhr-streaming', 'iframe-eventsource', 'xdr-polling', 'xhr-polling'],
-    debug: true,
-    jsessionid: false,
-    server_heartbeat_interval: 4000,
-    heartbeatTimeout: 2000
-  };
-
-  const stream = 'https://streaming.forexpros.com'
-  const sock = new SockJS(stream + '/echo', null, options);
-
-  sock.onopen = () => {
-    var TimeZoneID = 12;
-
-    for (const pid of pids) {
-      sock.send(JSON.stringify({
-        _event: "subscribe",
-        tzID: TimeZoneID,
-        message: pid
-      }));
-    }
-  };
-
-  sock.onmessage = function (event) {
-    try {
-      const content = JSON.parse(event.data);
-      const serializedMsg = content.message.split('::');
-      const serializedObj = JSON.parse(serializedMsg[1]);
-      console.log({ serializedObj });
-    }
-
-    catch (err) {
-      console.error('Houve um problema ao serializar a mensagem: ' + err.message + event.data);
-      sock.close();
-    }
-  };
-
-  sock.onclose = function () {
-    console.log('Closing websocket...');
-  }
-}
-
-const news = ref([
-  {
-    title: 'Lorem Ipsum',
-    org: 'Bloomberg',
-    createdAt: '2024-08-12T23:00:10',
-    lide: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.',
-    isRead: false,
-    score: 5
-  },
-  {
-    title: 'Lorem Ipsum',
-    org: 'BDM',
-    createdAt: '2024-08-12T23:00:10',
-    lide: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.',
-    isRead: true,
-    score: 3
-  },
-  {
-    title: 'Lorem Ipsum',
-    org: 'Financial Juice',
-    createdAt: '2024-08-12T23:00:10',
-    lide: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.',
-    isRead: true,
-    score: 1
-  },
-  {
-    title: 'Lorem Ipsum',
-    org: 'BDM',
-    createdAt: '2024-08-12T23:00:10',
-    lide: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.',
-    isRead: true,
-    score: 3
-  },
-  {
-    title: 'Lorem Ipsum',
-    org: 'BDM',
-    createdAt: '2024-08-12T23:00:10',
-    lide: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.',
-    isRead: true,
-    score: 3
-  },
-  {
-    title: 'Lorem Ipsum',
-    org: 'BDM',
-    createdAt: '2024-08-12T23:00:10',
-    lide: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industrys standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.',
-    isRead: true,
-    score: 1
-  },
-]);
+const news = ref<Noticia[]>([]);
 
 onMounted(() => {
-  connectionFactory();
-})
+  wssForexProsService.register(
+    new Observable(ForexProsConnectionState.ESTABLISHED, () => {
+      pids.forEach((pid) => {
+        wssForexProsService.subscribe(pid, (cota) => {
+          console.log({ cota })
+        })
+      })
+    })
+  );
+});
 
 </script>
 
